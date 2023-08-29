@@ -1,6 +1,7 @@
 import torch
 import argparse
 import os
+import gc
 from tqdm import tqdm
 from torch import optim
 from torch import nn
@@ -9,6 +10,7 @@ from models import resnet
 from torchvision import models
 from data.dataset import CowDataset,train_transform,val_transform
 
+gc.collect()
 '''
     acc & loss
 '''
