@@ -1,6 +1,6 @@
 import torch
 import torch.nn as nn
-
+from torchinfo import summary
 class BottleNeck(nn.Module):    
     expansion = 4
     
@@ -70,6 +70,21 @@ class ResNet(nn.Module):
                     nn.init.constant_(m.bn3.weight, 0)
                 elif isinstance(m, BasicBlock):
                     nn.init.constant_(m.bn2.weight, 0)
+        ##init weight
+        for m in self.modules():
+            if isinstance(m, nn.Conv2d):
+                #print(1)
+                nn.init.kaiming_uniform_(m.weight.data,nonlinearity='relu')
+                if m.bias is not None:
+                    nn.init.constant_(m.bias.data, 0)
+            elif isinstance(m, nn.BatchNorm2d):
+                #print(2)
+                nn.init.constant_(m.weight.data, 1)
+                nn.init.constant_(m.bias.data, 0)
+            elif isinstance(m, nn.Linear):
+                #print(3)
+                nn.init.kaiming_uniform_(m.weight.data)
+                nn.init.constant_(m.bias.data, 0)
         
     def get_resnet_layer(self, block, n_blocks, channels, stride = 1):   
         layers = []        
@@ -99,8 +114,12 @@ class ResNet(nn.Module):
         h = x.view(x.shape[0], -1)
         x = self.fc(h)        
         return x, h
-    
+
+##---------model--------------
+config = (BottleNeck, [3, 4, 23, 3],[64, 128, 256, 512])
+resnet101=ResNet(config,4)
+c = type(resnet101)
 if __name__=='__main__':
     config = (BottleNeck, [3, 4, 23, 3],[64, 128, 256, 512])
     resnet101=ResNet(config,3)
-    print(resnet101)
+    summary(resnet101,(32,3,480,480))
