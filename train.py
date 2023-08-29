@@ -1,6 +1,7 @@
 import torch
 import argparse
-
+import os
+from tqdm import tqdm
 from torch import optim
 from torch import nn
 from torch.utils.tensorboard import SummaryWriter
@@ -49,12 +50,13 @@ def train(log_path, batch_size, lr):
 
     for epoch in range(0,200):
         model.train()
-        for _iter, (img, label) in enumerate(train_loader):
+        for _iter, (img, label) in enumerate(tqdm(train_loader)):
+            lens=len(train_loader)
             # optimizer에 저장된 미분값을 0으로 초기화
             optimizer.zero_grad()
-            img = img.cuda()
-            label = label.cuda()
-            pred_logit = model(img)
+            img = img.to(device)
+            label = label.to(device)
+            pred_logit = model(img)[0]
 
             # loss 값 계산
             loss = criterion(pred_logit, label)
@@ -67,12 +69,12 @@ def train(log_path, batch_size, lr):
 
         model.eval()
         valid_loss, valid_acc = AverageMeter(), AverageMeter()
-        for img, label in val_loader:
-            
+        for img, label in tqdm(val_loader):
+            lens=len(val_loader)
             img = img.cuda()
             label = label.cuda()
             with torch.no_grad():
-                pred_logit = model(img)
+                pred_logit = model(img)[0]
 
             # loss 값 계산
             loss = criterion(pred_logit, label)
@@ -95,7 +97,7 @@ if __name__=='__main__':
     parser = argparse.ArgumentParser()
 
     parser.add_argument('--log_path',  type=str, default='./log/01')
-    parser.add_argument('--batch_size', type=int, default=32)
+    parser.add_argument('--batch_size', type=int, default=1)
     parser.add_argument('--lr',  type=float, default=1e-7)
 
     args = parser.parse_args()
