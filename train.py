@@ -31,7 +31,7 @@ class AverageMeter(object):
         self.count += n
         self.avg = self.sum / self.count
 
-def train(log_path, batch_size, lr):
+def train(log_path, batch_size, lr, model_path=None):
     train_data = CowDataset(r'C:\Users\hyungu_lee\Downloads\축산물 품질(QC) 이미지\Training\pre_processed', transform=train_transform, mode='train', val_ratio=0.2)
     val_data = CowDataset(r'C:\Users\hyungu_lee\Downloads\축산물 품질(QC) 이미지\Training\pre_processed',transform=val_transform, mode='val', val_ratio=0.2)
 
@@ -41,7 +41,9 @@ def train(log_path, batch_size, lr):
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
     model = resnet.resnet101
-
+    #load model
+    if model_path is not None:
+        model.load_state_dict(torch.load(model_path))
     optimizer = optim.AdamW(model.parameters(), lr=lr)
     criterion = nn.CrossEntropyLoss()
 
@@ -73,8 +75,8 @@ def train(log_path, batch_size, lr):
         valid_loss, valid_acc = AverageMeter(), AverageMeter()
         for img, label in tqdm(val_loader):
             lens=len(val_loader)
-            img = img.cuda()
-            label = label.cuda()
+            img = img.to(device)
+            label = label.to(device)
             with torch.no_grad():
                 pred_logit = model(img)[0]
 
@@ -101,7 +103,7 @@ if __name__=='__main__':
     parser.add_argument('--log_path',  type=str, default='./log/01')
     parser.add_argument('--batch_size', type=int, default=1)
     parser.add_argument('--lr',  type=float, default=1e-7)
-
+    parser.add_argument('--model_path', default=None)
     args = parser.parse_args()
     print(args)
-    train(args.log_path, args.batch_size, args.lr)
+    train(args.log_path, args.batch_size, args.lr, args.model_path)
