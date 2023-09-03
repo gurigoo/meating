@@ -1,4 +1,4 @@
-from fastapi import FastAPI, UploadFile
+from fastapi import FastAPI, UploadFile, File, Form
 import uvicorn
 import torch
 
@@ -22,11 +22,13 @@ def ends_app():
         torch.cuda.empty_cache()
     print('shutdown app')
 
-@app.post("/inference")
-async def inference(img):
+@app.post("/inference/")
+async def inference(img: bytes = File()):
     print('inference start')
-    img = pre_process.resizing(img['file'],480)
+    img = pre_process.resizing(img,480)
     img = dataset.val_transform(img)
+    img = img.unsqueeze(0)
+    print(img.shape)
     model.eval()
     with torch.no_grad():
         img.to(device)
