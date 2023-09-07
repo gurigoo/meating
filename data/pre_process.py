@@ -6,7 +6,7 @@ def resizing(path, dst_size):
     try:
         img = Image.open(path)
     except:
-        img = Image.open(io.BytesIO(path))
+        img = Image.open(io.BytesIO(path)).convert('RGB')
     img_size = img.size #(가로,세로)
     if img_size.index(min(img_size))==0:#높은 이미지
         resized_img = img.resize(
