@@ -45,7 +45,7 @@ def train(log_path, batch_size, lr, model_path=None):
     if model_path is not None:
         model.load_state_dict(torch.load(model_path))
     optimizer = optim.AdamW(model.parameters(), lr=lr)
-    criterion = nn.CrossEntropyLoss()
+    criterion = nn.CrossEntropyLoss(label_smoothing=0.4)
 
     model.to(device)
     criterion.to(device)
