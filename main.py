@@ -22,7 +22,7 @@ def ends_app():
         torch.cuda.empty_cache()
     print('shutdown app')
 
-@app.post("/inference/")
+@app.post("/inference")
 async def inference(img: bytes = File()):
     print('inference start')
     img = pre_process.resizing(img,480)
