@@ -31,22 +31,28 @@ class AverageMeter(object):
         self.count += n
         self.avg = self.sum / self.count
 
-def train(log_path, batch_size, lr, model_path=None):
-    train_data = CowDataset(r'C:\Users\hyungu_lee\Downloads\축산물 품질(QC) 이미지\Training\pre_processed', transform=train_transform, mode='train', val_ratio=0.2)
-    val_data = CowDataset(r'C:\Users\hyungu_lee\Downloads\축산물 품질(QC) 이미지\Training\pre_processed',transform=val_transform, mode='val', val_ratio=0.2)
+def train(log_path, batch_size, lr, model_path=None, task = 'regression'):
+    train_data = CowDataset(r'C:\Users\hyungu_lee\Downloads\축산물 품질(QC) 이미지\Training\pre_processed', transform=train_transform, mode='train', val_ratio=0.2, task=task)
+    val_data = CowDataset(r'C:\Users\hyungu_lee\Downloads\축산물 품질(QC) 이미지\Training\pre_processed',transform=val_transform, mode='val', val_ratio=0.2, task=task)
 
     train_loader = torch.utils.data.DataLoader(train_data, batch_size=batch_size, shuffle=True, num_workers=4,pin_memory=True)
     val_loader = torch.utils.data.DataLoader(val_data, batch_size=batch_size, shuffle=True, num_workers=4,pin_memory=True)
 
     device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
 
-    model = resnet.resnet101
+    if task == 'regression':
+        model = resnet.resnetregression101
+        print('asdf')
+        criterion = nn.MSELoss()
+    elif task == 'classification':
+        model = model = resnet.resnet101
+        criterion = nn.CrossEntropyLoss(label_smoothing=0.4)
     #load model
     if model_path is not None:
-        model.load_state_dict(torch.load(model_path))
+        model.load_state_dict(torch.load(model_path, map_location=device),strict=False)
     optimizer = optim.AdamW(model.parameters(), lr=lr)
-    criterion = nn.CrossEntropyLoss(label_smoothing=0.4)
-
+    #criterion = nn.CrossEntropyLoss(label_smoothing=0.4)
+    
     model.to(device)
     criterion.to(device)
 
@@ -61,6 +67,8 @@ def train(log_path, batch_size, lr, model_path=None):
             img = img.to(device)
             label = label.to(device)
             pred_logit = model(img)[0]
+            print(pred_logit)
+            print(label)
 
             # loss 값 계산
             loss = criterion(pred_logit, label)
@@ -104,6 +112,7 @@ if __name__=='__main__':
     parser.add_argument('--batch_size', type=int, default=1)
     parser.add_argument('--lr',  type=float, default=1e-7)
     parser.add_argument('--model_path', default=None)
+    parser.add_argument('--task', default='regression')
     args = parser.parse_args()
     print(args)
-    train(args.log_path, args.batch_size, args.lr, args.model_path)
+    train(args.log_path, args.batch_size, args.lr, args.model_path, args.task)

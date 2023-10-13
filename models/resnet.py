@@ -1,5 +1,6 @@
 import torch
 import torch.nn as nn
+import torch.nn.functional as F
 from torchinfo import summary
 class BottleNeck(nn.Module):    
     expansion = 4
@@ -21,7 +22,7 @@ class BottleNeck(nn.Module):
             bn = nn.BatchNorm2d(self.expansion * out_channels)
             downsample = nn.Sequential(conv, bn)
         else:
-            downsample = None            
+            downsample = None
         self.downsample = downsample
         
     def forward(self, x):        
@@ -82,7 +83,7 @@ class ResNet(nn.Module):
                 nn.init.constant_(m.weight.data, 1)
                 nn.init.constant_(m.bias.data, 0)
             elif isinstance(m, nn.Linear):
-                #print(3)
+                print(m)
                 nn.init.kaiming_uniform_(m.weight.data)
                 nn.init.constant_(m.bias.data, 0)
         
@@ -109,17 +110,42 @@ class ResNet(nn.Module):
         x = self.layer1(x)
         x = self.layer2(x)
         x = self.layer3(x)
-        x = self.layer4(x)        
+        x = self.layer4(x)
         x = self.avgpool(x)
         h = x.view(x.shape[0], -1)
-        x = self.fc(h)        
+        x = self.fc(h)
         return x, h
 
+
+class ResNetRegression(ResNet):
+    def __init__(self, config, output_dim, zero_init_residual=False):
+        super().__init__(config, output_dim)
+        self.fc = nn.Linear(self.in_channels, output_dim)
+        self.fc2 = nn.Linear(output_dim, 1)
+    def forward(self, x):        
+        x = self.conv1(x)
+        x = self.bn1(x)
+        x = self.relu(x)
+        x = self.maxpool(x)
+        x = self.layer1(x)
+        x = self.layer2(x)
+        x = self.layer3(x)
+        x = self.layer4(x)
+        x = self.avgpool(x)
+        h = x.view(x.shape[0], -1)
+        x = self.fc(h)
+        x = F.sigmoid(x)
+        x = self.fc2(x)
+        x = F.sigmoid(x)
+        return x, h
 ##---------model--------------
 config = (BottleNeck, [3, 4, 23, 3],[64, 128, 256, 512])
 resnet101=ResNet(config,4)
+resnetregression101 = ResNetRegression(config,4)
+
 c = type(resnet101)
 if __name__=='__main__':
     config = (BottleNeck, [3, 4, 23, 3],[64, 128, 256, 512])
-    resnet101=ResNet(config,3)
-    summary(resnet101,(32,3,480,480))
+    #resnet101=ResNet(config,4)
+    resnet101 = ResNetRegression(config,4)
+    summary(resnet101,(48,3,480,480))

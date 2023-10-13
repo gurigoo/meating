@@ -7,11 +7,11 @@ from data import dataset, pre_process
 
 app= FastAPI()
 device = torch.device('cuda' if torch.cuda.is_available() else 'cpu')
-model = resnet.resnet101
+model = resnet.resnetregression101
 
 @app.on_event('startup')
 def start_app():
-    model.load_state_dict(torch.load('./log/03/00027.pt', map_location=device))
+    model.load_state_dict(torch.load('./log/05/00006.pt', map_location=device))
     model.to(device)
     model.eval()
     print('init app')
@@ -33,8 +33,8 @@ async def inference(img: bytes = File()):
     with torch.no_grad():
         img.to(device)
         output = model(img)[0]
-        cls = torch.argmax(output)
-    score = int((4-cls)*25)
+        print(output)
+        score = min(int(output*100),100)
     print(score)
     return score
 

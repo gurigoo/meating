@@ -1,17 +1,19 @@
 import glob
 import random
 from torch.utils.data import Dataset
+import torch
 from torchvision import transforms
 from PIL import Image
 import matplotlib.pyplot as plt
 class CowDataset(Dataset):
-    def __init__(self, data_dir, transform=None, mode='train', val_ratio=0.2, seed = 42):
+    def __init__(self, data_dir, transform=None, mode='train', val_ratio=0.2, seed = 42,task = 'regression'):
         self.data_dir = data_dir
         self.transform = transform
         self.mode = mode
         self.val_ratio = val_ratio
         self.seed = 42
         self.img_paths = []
+        self.task = task
         self.setup()
 
     def setup(self):
@@ -33,16 +35,43 @@ class CowDataset(Dataset):
         img_path = self.img_paths[idx]
         img = Image.open(img_path)
         transformed_img = self.transform(img)
+        if self.task == 'regression':
+            if '1++' in img_path:
+                label = 1.0
+            elif '1+' in img_path:
+                label = 0.75
+            elif '2' in img_path:
+                label = 0.50
+            elif '3' in img_path:
+                label = 0.25
+            return transformed_img, torch.tensor([label],dtype=torch.float)
+        elif self.task == 'classification':
+            if '1++' in img_path:
+                label = 0
+            elif '1+' in img_path:
+                label = 1
+            elif '2' in img_path:
+                label = 2
+            elif '3' in img_path:
+                label = 3
+            return transformed_img, label
+
+class CowDatasetSig(CowDataset):
+    def __getitem__(self,idx):
+        img_path = self.img_paths[idx]
+        img = Image.open(img_path)
+        transformed_img = self.transform(img)
         
         if '1++' in img_path:
-            label = 0
+            label = 1.
         elif '1+' in img_path:
-            label = 1
+            label = 0.75
         elif '2' in img_path:
-            label = 2
+            label = 0.5
         elif '3' in img_path:
-            label = 3
+            label = 0.25
         return transformed_img, label
+    
 '''
     augmentation
 '''
@@ -63,6 +92,7 @@ if __name__=='__main__':
     dataset = CowDataset(r'C:\Users\hyungu_lee\Downloads\축산물 품질(QC) 이미지\Training\새 폴더', transform=train_transform)
     print(dataset[0])
     print(dataset[0][0].size())
+    print(dataset[1])
     plt.imshow(transforms.functional.to_pil_image(dataset[0][0]))
     plt.show()
                                       
